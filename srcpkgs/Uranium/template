@@ -1,10 +1,8 @@
 # Template file for 'Uranium'
 pkgname=Uranium
-version=4.6.0
-revision=1
-archs=noarch
+version=4.7.1
+revision=2
 build_style=cmake
-pycompile_module="UM"
 pycompile_dirs="usr/lib/uranium/plugins"
 hostmakedepends="python3"
 depends="libArcus-python3 python3-PyQt5-opengl python3-PyQt5-quick
@@ -15,4 +13,9 @@ maintainer="Karl Nilsson <karl.robert.nilsson@gmail.com>"
 license="LGPL-3.0-or-later"
 homepage="https://github.com/Ultimaker/Uranium"
 distfiles="https://github.com/Ultimaker/Uranium/archive/${version}.tar.gz"
-checksum=70ac653fce33cdd7627041f18bfe481527c4438f07a056798858b215a968eb9b
+checksum=16a72ef9e73df86016ceff37a068e3d70a111223669bfa4f86608c29fdaacc0c
+
+post_install() {
+	vmkdir usr/share/uranium/cmake
+	mv $DESTDIR/usr/share/cmake-*/Modules/* $DESTDIR/usr/share/uranium/cmake/
+}

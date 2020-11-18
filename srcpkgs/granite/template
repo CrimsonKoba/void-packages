@@ -1,6 +1,6 @@
 # Template file for 'granite'
 pkgname=granite
-version=5.3.1
+version=5.5.0
 revision=1
 build_style=meson
 build_helper="gir"
@@ -12,7 +12,7 @@ maintainer="Cameron Nemo <cnemo@tutanota.com>"
 license="LGPL-3.0-or-later"
 homepage="https://github.com/elementary/granite"
 distfiles="https://github.com/elementary/granite/archive/${version}.tar.gz"
-checksum=3043871ceb4078a7424e36ceeb3491d250cbe74b88d5aa45be3fc49893815ab5
+checksum=0c376520c7d462fca05213a14970ee1075fea4a78062a33b47529e2647cd5557
 
 granite-devel_package() {
 	depends="${makedepends} ${sourcepkg}>=${version}_${revision}"

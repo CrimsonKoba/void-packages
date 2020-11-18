@@ -1,6 +1,6 @@
 # Template file for 'linux5.4'
 pkgname=linux5.4
-version=5.4.35
+version=5.4.77
 revision=1
 wrksrc="linux-${version}"
 short_desc="Linux kernel and modules (${version%.*} series)"
@@ -8,8 +8,8 @@ maintainer="Helmut Pozimski <helmut@pozimski.eu>"
 license="GPL-2.0-only"
 homepage="https://www.kernel.org"
 distfiles="https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${version}.tar.xz"
-checksum=e16bd5f7284a80a41328bf712e1136b0adf5b71cc0bd263efa7cac75539806d4
-python_version=2 #unverified
+checksum=a3e03e6970240dddc8174bf9f49b56d774c40125eabe1582d2ebe85b01addbf7
+python_version=3
 patch_args="-Np1"
 
 nodebug=yes  # -dbg package is generated below manually
@@ -29,6 +29,7 @@ kernel_hooks_version="${_kernver}"
 # These files could be modified when an external module is built.
 mutable_files="
  /usr/lib/modules/${_kernver}/modules.builtin.bin
+ /usr/lib/modules/${_kernver}/modules.builtin.alias.bin
  /usr/lib/modules/${_kernver}/modules.softdep
  /usr/lib/modules/${_kernver}/modules.dep
  /usr/lib/modules/${_kernver}/modules.dep.bin

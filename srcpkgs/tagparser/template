@@ -1,16 +1,17 @@
 # Template file for 'tagparser'
 pkgname=tagparser
-version=9.1.3
+version=9.3.0
 revision=1
 build_style=cmake
 configure_args="-DBUILD_SHARED_LIBS:BOOL=ON"
-makedepends="cpp-utilities-devel zlib-devel"
+hostmakedepends="pkg-config"
+makedepends="cpp-utilities-devel zlib-devel libressl-devel"
 short_desc="C++ library for handling AAC, ID3, Vorbis, Opus, FLAC and Matroska tags"
 maintainer="Andrew J. Hesford <ajh@sideband.org>"
 license="GPL-2.0-only"
 homepage="https://github.com/Martchus/tagparser"
 distfiles="https://github.com/Martchus/${pkgname}/archive/v${version}.tar.gz"
-checksum=76c6c943a64150bb858a5c8cf483e4812914ce0bdfaa8d79781d19a4d0900a99
+checksum=5aa10fee7019bcd88053bea8a805379e07e257121eb1b06a7c2c8a6c86576dc6
 
 tagparser-devel_package() {
 	short_desc+=" - development files"

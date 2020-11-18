@@ -143,6 +143,8 @@ zap
 
 Options:
 
+-1  If dependencies of target package are missing, fail instead of building them.
+
 -a  <target>
     Cross compile packages for this target machine. Supported targets:
 
@@ -175,6 +177,8 @@ $(print_cross_targets)
 
 -I  Ignore required dependencies, useful for extracting/fetching sources.
 
+-i  Make xbps-src internal errors non-fatal.
+
 -j  Number of parallel build jobs to use when building packages.
 
 -L  Disable ASCII colors.
@@ -194,6 +198,11 @@ $(print_cross_targets)
 
     Supported options can be shown with the 'show-options' target.
 
+-p  <variable,variable2,...>
+    For show target, show specified variables in addition to default ones.
+    Variable is split and each word is printed in separate line by default.
+    In order to print the whole value in one line, append asterisk to variable name.
+
 -Q  Enable running the check stage.
 
 -q  Suppress informational output of xbps-src (build output is still printed).
@@ -208,7 +217,10 @@ $(print_cross_targets)
 -t  Create a temporary masterdir to not pollute the current one. Note that
     the existing masterdir must be fully populated with binary-bootstrap first.
     Once the target has finished, this temporary masterdir will be removed.
-    This flag requires xbps-uchroot(1).
+    This flag requires xbps-uchroot(1), and won't work on filesystems that don't
+    support overlayfs.
+
+-V  Print version of xbps, then exit.
 
 _EOF
 }
@@ -340,7 +352,7 @@ readonly XBPS_SRC_VERSION="113"
 export XBPS_MACHINE=$(xbps-uhelper -C /dev/null arch)
 
 XBPS_OPTIONS=
-XBPS_OPTSTRING="1a:c:CEfgGhH:iIj:Lm:No:qQr:tV"
+XBPS_OPTSTRING="1a:c:CEfgGhH:iIj:Lm:No:p:qQr:tV"
 
 # Preprocess arguments in order to allow options before and after XBPS_TARGET.
 eval set -- $(getopt "$XBPS_OPTSTRING" "$@");
@@ -367,6 +379,7 @@ while getopts "$XBPS_OPTSTRING" opt; do
         m) XBPS_ARG_MASTERDIR="$OPTARG"; XBPS_OPTIONS+=" -m $OPTARG";;
         N) XBPS_ARG_SKIP_REMOTEREPOS=1; XBPS_OPTIONS+=" -N";;
         o) XBPS_ARG_PKG_OPTIONS="$OPTARG"; XBPS_OPTIONS+=" -o $OPTARG";;
+        p) XBPS_ARG_PRINT_VARIABLES="$OPTARG"; XBPS_OPTIONS+=" -p $OPTARG";;
         q) XBPS_ARG_QUIET=1; XBPS_OPTIONS+=" -q";;
         Q) XBPS_ARG_CHECK_PKGS=1; XBPS_OPTIONS+=" -Q";;
         r) XBPS_ARG_ALT_REPOSITORY="$OPTARG"; XBPS_OPTIONS+=" -r $OPTARG";;
@@ -428,6 +441,8 @@ else
     elif [ -s $XBPS_DISTDIR/etc/conf ]; then
         # ... otherwise read generic user configuration...
         readonly XBPS_CONFIG_FILE=$XBPS_DISTDIR/etc/conf
+    elif [ -s ${XDG_CONFIG_HOME:-$HOME/.config}/xbps-src.conf ]; then
+        readonly XBPS_CONFIG_FILE=${XDG_CONFIG_HOME:-$HOME/.config}/xbps-src.conf
     elif [ -s $HOME/.xbps-src.conf ]; then
         # ... fallback to ~/.xbps-src.conf otherwise.
         readonly XBPS_CONFIG_FILE=$HOME/.xbps-src.conf
@@ -449,6 +464,7 @@ fi
 [ -n "$XBPS_ARG_SKIP_DEPS" ] && XBPS_SKIP_DEPS=1
 [ -n "$XBPS_ARG_KEEP_ALL" ] && XBPS_KEEP_ALL=1
 [ -n "$XBPS_ARG_QUIET" ] && XBPS_QUIET=1
+[ -n "$XBPS_ARG_PRINT_VARIABLES" ] && XBPS_PRINT_VARIABLES="$XBPS_ARG_PRINT_VARIABLES"
 [ -n "$XBPS_ARG_ALT_REPOSITORY" ] && XBPS_ALT_REPOSITORY="$XBPS_ARG_ALT_REPOSITORY"
 [ -n "$XBPS_ARG_CROSS_BUILD" ] && XBPS_CROSS_BUILD="$XBPS_ARG_CROSS_BUILD"
 [ -n "$XBPS_ARG_MAKEJOBS" ] && XBPS_MAKEJOBS="$XBPS_ARG_MAKEJOBS"
@@ -457,7 +473,7 @@ export XBPS_BUILD_ONLY_ONE_PKG XBPS_SKIP_REMOTEREPOS XBPS_BUILD_FORCEMODE \
        XBPS_INFORMATIVE_RUN XBPS_TEMP_MASTERDIR XBPS_BINPKG_EXISTS \
        XBPS_USE_GIT_REVS XBPS_CHECK_PKGS XBPS_DEBUG_PKGS XBPS_SKIP_DEPS \
        XBPS_KEEP_ALL XBPS_QUIET XBPS_ALT_REPOSITORY XBPS_CROSS_BUILD \
-       XBPS_MAKEJOBS
+       XBPS_MAKEJOBS XBPS_PRINT_VARIABLES
 
 # The masterdir/hostdir variables are forced and readonly in chroot
 if [ -z "$IN_CHROOT" ]; then
@@ -467,15 +483,6 @@ if [ -z "$IN_CHROOT" ]; then
     # Sanitize masterdir/hostdir once set for real (resolve links)
     export XBPS_MASTERDIR="$(readlink -f $XBPS_MASTERDIR 2>/dev/null)"
     export XBPS_HOSTDIR="$(readlink -f $XBPS_HOSTDIR 2>/dev/null)"
-fi
-
-# If pkg options were set in config(s), merge them with command line
-if [ -n "$XBPS_ARG_PKG_OPTIONS" ]; then
-    if [ -n "$XBPS_PKG_OPTIONS" ]; then
-        export XBPS_PKG_OPTIONS+=",$XBPS_ARG_PKG_OPTIONS"
-    else
-        export XBPS_PKG_OPTIONS="$XBPS_ARG_PKG_OPTIONS"
-    fi
 fi
 
 # Forbid root unless XBPS_ALLOW_CHROOT_BREAKOUT is set
@@ -500,14 +507,13 @@ fi
 
 # Try using chroot-git then git from the host system
 if command -v chroot-git &>/dev/null; then
-    XBPS_GIT_CMD=$(command -v chroot-git)
+    export XBPS_GIT_CMD=$(command -v chroot-git)
 elif command -v git &>/dev/null; then
-    XBPS_GIT_CMD=$(command -v git)
+    export XBPS_GIT_CMD=$(command -v git)
 else
     echo "neither chroot-git or git are available in your system!" 1>&2
     exit 1
 fi
-readonly XBPS_GIT_CMD
 
 if [ -n "$XBPS_HOSTDIR" ]; then
     export XBPS_REPOSITORY=$XBPS_HOSTDIR/binpkgs
@@ -556,7 +562,7 @@ linux32_check() {
     local tgtarch="$2"
     case "$hostarch" in
         x86_64*) if [[ "$tgtarch" == i686* ]]; then return 0; fi ;;
-        ppc64le*) return 1 ;;
+        ppc64le*) if [[ "$tgtarch" == ppcle* ]]; then return 0; fi ;;
         ppc64*)
             case "$tgtarch" in
                 ppc64*) return 1 ;;
@@ -599,8 +605,8 @@ if [ "$IN_CHROOT" ]; then
     readonly XBPS_BUILDDIR=/builddir
 else
     readonly XBPS_UHELPER_CMD="xbps-uhelper -r $XBPS_MASTERDIR"
-    readonly XBPS_INSTALL_CMD="xbps-install -c $XBPS_HOSTDIR/repocache-$XBPS_MACHINE -r $XBPS_MASTERDIR"
-    readonly XBPS_QUERY_CMD="xbps-query -c $XBPS_HOSTDIR/repocache-$XBPS_MACHINE -r $XBPS_MASTERDIR"
+    readonly XBPS_INSTALL_CMD="xbps-install -c $XBPS_HOSTDIR/repocache-$XBPS_MACHINE -r $XBPS_MASTERDIR -C etc/xbps.d"
+    readonly XBPS_QUERY_CMD="xbps-query -c $XBPS_HOSTDIR/repocache-$XBPS_MACHINE -r $XBPS_MASTERDIR -C etc/xbps.d"
     readonly XBPS_RECONFIGURE_CMD="xbps-reconfigure -r $XBPS_MASTERDIR"
     readonly XBPS_REMOVE_CMD="xbps-remove -r $XBPS_MASTERDIR"
     readonly XBPS_CHECKVERS_CMD="xbps-checkvers -r $XBPS_MASTERDIR"
@@ -621,7 +627,7 @@ export XBPS_SHUTILSDIR XBPS_CROSSPFDIR XBPS_TRIGGERSDIR \
     XBPS_CPPFLAGS XBPS_CFLAGS XBPS_CXXFLAGS XBPS_FFLAGS XBPS_LDFLAGS \
     XBPS_MAKEJOBS XBPS_BUILD_FORCEMODE XBPS_USE_GIT_REVS XBPS_DEBUG_PKGS \
     XBPS_CHECK_PKGS XBPS_CCACHE XBPS_DISTCC XBPS_DISTCC_HOSTS XBPS_SKIP_DEPS \
-    XBPS_SKIP_REMOTEREPOS XBPS_CROSS_BUILD XBPS_PKG_OPTIONS XBPS_CONFIG_FILE \
+    XBPS_SKIP_REMOTEREPOS XBPS_CROSS_BUILD XBPS_ARG_PKG_OPTIONS XBPS_CONFIG_FILE \
     XBPS_KEEP_ALL XBPS_HOSTDIR XBPS_MASTERDIR XBPS_SRC_VERSION \
     XBPS_DESTDIR XBPS_MACHINE XBPS_TEMP_MASTERDIR XBPS_BINPKG_EXISTS \
     XBPS_LIBEXECDIR XBPS_DISTDIR XBPS_DISTFILES_MIRROR XBPS_ALLOW_RESTRICTED \
@@ -747,7 +753,7 @@ case "$XBPS_TARGET" in
             if [ -n "$CHROOT_READY" -a -z "$IN_CHROOT" ]; then
                 chroot_handler $XBPS_TARGET $XBPS_TARGET_PKG || exit $?
             else
-                remove_pkg_wrksrc $wrksrc
+                remove_pkg_wrksrc
                 remove_pkg_statedir
                 if declare -f do_clean >/dev/null; then
                     run_func do_clean
@@ -797,7 +803,7 @@ case "$XBPS_TARGET" in
         ;;
     show)
         read_pkg ignore-problems
-        show_pkg
+        show_pkg $XBPS_PRINT_VARIABLES
         ;;
     show-avail)
         read_pkg &>/dev/null
@@ -823,6 +829,29 @@ case "$XBPS_TARGET" in
         read_pkg ignore-problems
         show_pkg_makedepends
         ;;
+    show-pkg-var-dump)
+        read_pkg ignore-problems
+        for sub_name in $subpackages; do
+            if [ $sub_name = $XBPS_TARGET_PKG ]; then
+                ${sub_name}_package
+            fi
+        done
+        printf "archs: %s\n\n" "$archs"
+        printf "bootstrap: %s\n\n" "$bootstrap"
+        printf "broken: %s\n\n" "$broken"
+        printf "depends: %s\n\n" "$depends"
+        printf "hostmakedepends: %s\n\n" "$hostmakedepends"
+        printf "makedepends: %s\n\n" "$makedepends"
+        printf "nocross: %s\n\n" "$nocross"
+        printf "pkgname: %s\n\n" "$pkgname"
+        printf "restricted: %s\n\n" "$restricted"
+        printf "revision: %s\n\n" "$revision"
+        printf "subpackages: %s\n\n" "$subpackages"
+        printf "version: %s\n\n" "$version"
+        printf "provides: %s\n\n" "$provides"
+        printf "lib32disabled: %s\n\n" "$lib32disabled"
+        printf "nodebug: %s\n\n" "$nodebug"
+        ;;
     show-pkg-var)
         read_pkg ignore-problems
         for sub_name in $subpackages; do
@@ -830,28 +859,29 @@ case "$XBPS_TARGET" in
                 ${sub_name}_package
             fi
         done
-	while IFS= read -r pkg_var; do
-		print_var=
-		case "${pkg_var}" in
-		    bootstrap) print_var="$bootstrap ";;
-		    broken) print_var="$broken ";;
-		    depends) print_var="$depends ";;
-		    hostmakedepends) print_var="$hostmakedepends ";;
-		    makedepends) print_var="$makedepends ";;
-		    nocross) print_var="$nocross ";;
-		    pkgname) print_var="$pkgname ";;
-		    restricted) print_var="$restricted ";;
-		    revision) print_var="$revision ";;
-		    subpackages) print_var="$subpackages ";;
-		    version) print_var="$version ";;
-		    provides) print_var="$provides ";;
-		    lib32disabled) print_var="$lib32disabled ";;
-		    nodebug) print_var="$nodebug ";;
-		esac # the space at the end of each is essential for unset vars
-		if [ -n "$print_var" ]; then
-			printf "%s\n" "$(printf "${print_var% }" | tr -t '\n\r' ' ')"
-		fi # The trailing space gets stripped before printing anyway
-	done
+        while IFS= read -r pkg_var; do
+                print_var=
+                case "${pkg_var}" in
+                    archs) print_var="$archs ";;
+                    bootstrap) print_var="$bootstrap ";;
+                    broken) print_var="$broken ";;
+                    depends) print_var="$depends ";;
+                    hostmakedepends) print_var="$hostmakedepends ";;
+                    makedepends) print_var="$makedepends ";;
+                    nocross) print_var="$nocross ";;
+                    pkgname) print_var="$pkgname ";;
+                    restricted) print_var="$restricted ";;
+                    revision) print_var="$revision ";;
+                    subpackages) print_var="$subpackages ";;
+                    version) print_var="$version ";;
+                    provides) print_var="$provides ";;
+                    lib32disabled) print_var="$lib32disabled ";;
+                    nodebug) print_var="$nodebug ";;
+                esac # the space at the end of each is essential for unset vars
+                if [ -n "$print_var" ]; then
+                        printf "%s\n" "$(printf "${print_var% }" | tr -t '\n\r' ' ')"
+                fi # The trailing space gets stripped before printing anyway
+        done
         ;;
     show-options)
         read_pkg ignore-problems

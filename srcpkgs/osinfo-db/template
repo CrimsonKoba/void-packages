@@ -1,8 +1,7 @@
 # Template file for 'osinfo-db'
 pkgname=osinfo-db
-version=20200325
+version=20201015
 revision=1
-archs=noarch
 build_style=fetch
 hostmakedepends="osinfo-db-tools"
 short_desc="Osinfo database about operating systems"
@@ -10,7 +9,7 @@ maintainer="Orphaned <orphan@voidlinux.org>"
 license="GPL-2.0-or-later"
 homepage="https://libosinfo.org"
 distfiles="https://releases.pagure.org/libosinfo/${pkgname}-${version}.tar.xz"
-checksum=35bb4ce40e9f3a3fd2045173cc00135f03a726dbff0a001b07f69505a7247d84
+checksum=0a07a9eceebfb058528cb7092f30d7b843595715e2e053acde03acbc62a640c4
 skip_extraction="${pkgname}-${version}.tar.xz"
 
 do_install() {

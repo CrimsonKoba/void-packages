@@ -1,21 +1,18 @@
 # Template file for 'pycharm-community'
 pkgname=pycharm-community
-version=2020.1
+version=2020.2.3
 revision=1
-archs="i686 x86_64"
+archs="x86_64"
 depends="virtual?java-environment giflib libXtst"
 short_desc="Python integrated development environment"
 maintainer="Felix Van der Jeugt <felix.vanderjeugt@gmail.com>"
 license="Apache-2.0"
 homepage="https://www.jetbrains.org/pycharm/"
 distfiles="https://download-cf.jetbrains.com/python/${pkgname}-${version}.tar.gz"
-checksum=1aa49fd01ec9020c288a583ac90e777df3ae5c5dfcf4cc73d93ac7be1284a9d1
+checksum=870071ba911d41052e3b94ad97116940b79b411b4ad0aaccebb83b319e621073
 repository=nonfree
 nopie=yes
-
-case "$XBPS_TARGET_MACHINE" in
-	i686*) broken="/usr/lib/pycharm/bin/libdbm64.so: file format not recognized" ;;
-esac
+python_version=3
 
 do_install() {
 	vmkdir usr/bin

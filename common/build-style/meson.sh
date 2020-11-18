@@ -16,10 +16,6 @@ do_patch() {
 			armv*)
 				_MESON_CPU_FAMILY=arm
 				;;
-			ppc|ppc-musl)
-				_MESON_TARGET_ENDIAN=big
-				_MESON_CPU_FAMILY=ppc
-				;;
 			i686*)
 				_MESON_CPU_FAMILY=x86
 				;;
@@ -29,6 +25,13 @@ do_patch() {
 			ppc64*)
 				_MESON_TARGET_ENDIAN=big
 				_MESON_CPU_FAMILY=ppc64
+				;;
+			ppcle*)
+				_MESON_CPU_FAMILY=ppc
+				;;
+			ppc*)
+				_MESON_TARGET_ENDIAN=big
+				_MESON_CPU_FAMILY=ppc
 				;;
 			*)
 				# if we reached here that means that the cpu and cpu_family
@@ -49,11 +52,13 @@ ld = '${LD}'
 strip = '${STRIP}'
 readelf = '${READELF}'
 objcopy = '${OBJCOPY}'
-pkgconfig = 'pkg-config'
+pkgconfig = '${PKG_CONFIG}'
 rust = 'rustc'
 g-ir-scanner = '${XBPS_CROSS_BASE}/usr/bin/g-ir-scanner'
 g-ir-compiler = '${XBPS_CROSS_BASE}/usr/bin/g-ir-compiler'
 g-ir-generate = '${XBPS_CROSS_BASE}/usr/bin/g-ir-generate'
+llvm-config = '/usr/bin/llvm-config'
+cups-config = '${XBPS_CROSS_BASE}/usr/bin/cups-config'
 
 [properties]
 needs_exe_wrapper = true
@@ -85,7 +90,6 @@ do_configure() {
 
 	if [ "$CROSS_BUILD" ]; then
 		configure_args+=" --cross-file=${meson_crossfile}"
-		export PKG_CONFIG_FOR_BUILD="/usr/bin/pkg-config"
 	fi
 
 	${meson_cmd} \
@@ -103,7 +107,7 @@ do_configure() {
 		--localstatedir=/var \
 		--sharedstatedir=/var/lib \
 		--buildtype=plain \
-		--auto-features=enabled \
+		--auto-features=auto \
 		--wrap-mode=nodownload \
 		-Db_lto=true -Db_ndebug=true \
 		-Db_staticpic=true \

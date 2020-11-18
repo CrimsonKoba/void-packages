@@ -1,6 +1,6 @@
 # Template file for 'kinfocenter'
 pkgname=kinfocenter
-version=5.18.4.1
+version=5.20.3
 revision=1
 build_style=cmake
 configure_args="-DBUILD_TESTING=OFF"
@@ -8,12 +8,13 @@ hostmakedepends="extra-cmake-modules gettext pkg-config qt5-host-tools qt5-qmake
 makedepends="kdoctools plasma-framework-devel kdesignerplugin-devel kcmutils-devel
  kdelibs4support-devel kwayland-devel glu-devel pciutils-devel libraw1394-devel
  ksolid-devel"
+depends="hwids"
 short_desc="KDE Info Center"
-maintainer="John <johnz@posteo.net>"
+maintainer="John <me@johnnynator.dev>"
 license="GPL-2.0-or-later, LGPL-2.1-or-later, GFDL-1.2"
-homepage="https://projects.kde.org/projects/plasma/kinfocenter"
-distfiles="${KDE_SITE}/plasma/${version%.*}/${pkgname}-${version}.tar.xz"
-checksum=e05c18a654ae84e4677a5083db8fdb90cf8431dd2fea26e5fc8550a6615c7728
+homepage="https://invent.kde.org/plasma/kinfocenter"
+distfiles="${KDE_SITE}/plasma/${version}/${pkgname}-${version}.tar.xz"
+checksum=131b857fc403cc048b311a6f7c0fb6fdc90f5de1b7b98a3d30075b86519219d5
 
 if [ "$CROSS_BUILD" ]; then
 	hostmakedepends+=" kpackage-devel kconfig-devel kcoreaddons-devel kdoctools-devel"

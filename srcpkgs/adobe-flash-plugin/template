@@ -1,6 +1,6 @@
 # Template file for 'adobe-flash-plugin'
 pkgname=adobe-flash-plugin
-version=32.0.0.363
+version=32.0.0.433
 revision=1
 depends="curl hicolor-icon-theme desktop-file-utils"
 short_desc="Adobe Flash Player plugin for Netscape compatible browsers"
@@ -17,21 +17,21 @@ nopie=yes
 # The EULA file
 _eula="https://www.adobe.com/content/dam/Adobe/en/legal/licenses-terms/pdf/PlatformClients_PC_WWEULA-en_US-20150407_1357.pdf"
 _eulacksum=5a0a95eb4082b6db7182188ce119f3829184b238b0a91293322c2a51a2b41fc1
-_url=https://fpdownload.adobe.com/get/flashplayer/pdc/${version}
+_url=https://fpdownload.adobe.com/pub/flashplayer/pdc/${version}
 if [ "$XBPS_TARGET_MACHINE" = "x86_64" ]; then
 	distfiles="
 	 ${_url}/flash_player_npapi_linux.x86_64.tar.gz
 	 ${_url}/flash_player_ppapi_linux.x86_64.tar.gz"
 	checksum="
-	 c430d3f6b0127f9463e4e70857fbb9174fa5aa9e0f951e98ab48a17a7d9731bc
-	 3424df0e11d6036cc46c85c9bd40b62d4e0b79b4218f5718fc332faf78c6a496"
+	 ee022c4b1a96eecbfc0e022396cdcb713dddc2fb82abe00dc9c6ddf9518a004d
+	 ccb865f3a2d39012ec36d13df236e67a0043c43368f4b4b60465d5664870f570"
 else
 	distfiles="
 	 ${_url}/flash_player_npapi_linux.i386.tar.gz
 	 ${_url}/flash_player_ppapi_linux.i386.tar.gz"
 	checksum="
-	 087e4e22a9a20c33d91dcb749db7f0e3bbe4448d35e2c61b6c1bf75571edcb8e
-	 74905e2e30e078d794792e04244777123cf544d3254c6558700e82a8c9b355db"
+	 79dc936f5c1a3af91cd5a2eb31d0d4eb7bee4ebbd49239c6c8f8f8b4b98486e3
+	 e1d36f768cc6435b9a13b595a41df3f5fedfa6d1b984084163bb56f73baaff7c"
 fi
 distfiles+=" ${_eula}"
 checksum+=" ${_eulacksum}"

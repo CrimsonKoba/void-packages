@@ -1,6 +1,6 @@
 # Template file for 'linux4.14'
 pkgname=linux4.14
-version=4.14.175
+version=4.14.206
 revision=1
 wrksrc="linux-${version}"
 short_desc="Linux kernel and modules (${version%.*} series)"
@@ -8,7 +8,7 @@ maintainer="Orphaned <orphan@voidlinux.org>"
 license="GPL-2.0-only"
 homepage="http://www.kernel.org"
 distfiles="https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${version}.tar.xz"
-checksum=cb440ac5d20071dcb482e5062958514064b0c5a8375c92653062ea201ae0222c
+checksum=1c233efaa5063983293a02d4692acc9ced9c03e18857364855d4f612347086ac
 python_version=2 #unverified
 patch_args="-Np1"
 
@@ -32,6 +32,7 @@ kernel_hooks_version="${_kernver}"
 # These files could be modified when an external module is built.
 mutable_files="
  /usr/lib/modules/${_kernver}/modules.builtin.bin
+ /usr/lib/modules/${_kernver}/modules.builtin.alias.bin
  /usr/lib/modules/${_kernver}/modules.softdep
  /usr/lib/modules/${_kernver}/modules.dep
  /usr/lib/modules/${_kernver}/modules.dep.bin
